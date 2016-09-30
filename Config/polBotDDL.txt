@@ -1,0 +1,222 @@
+#### Primary/National Election Candidate DDL
+
+use politics;
+
+CREATE TABLE `import_politics` (
+    `tick_id` int(11) NOT NULL AUTO_INCREMENT,
+    `report_id` int(11) DEFAULT NULL,
+    `market` int(11) NOT NULL,
+    `security` int(11) NOT NULL,
+    `candidate` int(11) NOT NULL,
+    `price` decimal(5,3) NOT NULL,
+    PRIMARY KEY (`tick_id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+# Run the scraper to seed the database
+TRUNCATE import_politics; # get rid of any existing rows in these tables..they are continuously updated by the scraper
+TRUNCATE report_politics;
+./bettingMarketsScraper.sh
+
+
+#### TODO ####  ADD FOREIGN KEYS FROM import_politics table to all others 
+
+CREATE TABLE `report_politics` (
+    `report_id` int(11) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`report_id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `markets` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+INSERT INTO `markets`
+(name)
+SELECT DISTINCT `name`
+FROM test.markets;
+
+
+CREATE TABLE `candidates` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+INSERT INTO `candidates`
+(name)
+SELECT DISTINCT `name`
+FROM test.candidates;
+
+
+CREATE TABLE `securities` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+INSERT INTO `securities`
+(name)
+SELECT DISTINCT `name`
+FROM test.securities;
+
+
+# Query to display all the data...this is accomplished more efficiently in R 
+
+SELECT ip.report_id, ip.price, c.name, m.name AS market, s.name as security 
+FROM import_politics ip 
+INNER JOIN candidates c 
+on ip.candidate = c.id 
+INNER JOIN markets m 
+on ip.market = m.id 
+INNER JOIN securities s on ip.security = s.id;
+
+#---------------------------##---------------------------##---------------------------##---------------------------#
+
+
+### RCP Stragey DDL
+
+
+CREATE TABLE `import_rcp` (
+    `tick_id` int(11) NOT NULL AUTO_INCREMENT,
+    `report_id` int(11) DEFAULT NULL,
+    `market` int(11) NOT NULL,
+    `security` int(11) NOT NULL,
+    `price` decimal(5,3) NOT NULL,
+    PRIMARY KEY (`tick_id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `report_rcp` (
+    `report_id` int(11) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`report_id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+# Query to display all the data
+
+SELECT ip.report_id, ip.price, m.name AS market, s.name as security 
+FROM import_rcp ip 
+INNER JOIN markets m 
+on ip.market = m.id 
+INNER JOIN securities s on ip.security = s.id;
+
+
+#---------------------------##---------------------------##---------------------------##---------------------------#
+
+### Algo Strategy DDL...an instance of this DDL is used for each markets
+
+CREATE TABLE `contract_marketName` (
+    `ID` int(11) NOT NULL,
+    `DateEnd` varchar(255) NOT NULL,
+    `url` varchar(255) NOT NULL,
+    `Name` varchar(255) NOT NULL,
+    `LongName` varchar(255) NOT NULL,
+    `ShortName` varchar(255) NOT NULL,
+    `TickerSymbol` varchar(255) NOT NULL,
+    `Status` varchar(255) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ID`),
+    UNIQUE KEY `url` (`url`),
+    UNIQUE KEY `LongName` (`LongName`),
+    UNIQUE KEY `TickerSymbol` (`TickerSymbol`)
+) ;
+
+
+CREATE TABLE `report_marketName` (
+    `report_id` int(11) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`report_id`)
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `price_marketName` (
+    `tick_id` int(11) NOT NULL AUTO_INCREMENT, 
+    `contract_id` int(11) NOT NULL,
+    `report_id` int(11) DEFAULT NULL,
+    `TickerSymbol` varchar(255) NOT NULL,
+    `LastTradePrice` decimal(5,3) NOT NULL,
+    `BestBuyYesCost` decimal(5,3) NOT NULL,
+    `BestBuyNoCost` decimal(5,3) NOT NULL,
+    `BestSellYesCost` decimal(5,3) NOT NULL,
+    `BestSellNoCost` decimal(5,3) NOT NULL,
+    `LastClosePrice` decimal(5,3) NOT NULL,
+    `SharesTraded` int(11) DEFAULT NULL,
+    `Volume` int(11) DEFAULT NULL,
+    `TotalShares` int(11) DEFAULT NULL,
+    PRIMARY KEY (`tick_id`),
+    UNIQUE KEY (`contract_id`, `report_id`),
+    CONSTRAINT `price_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `politics`.`contract_marketName` (`ID`) ON UPDATE CASCADE,
+    CONSTRAINT `price_ibfk_2` FOREIGN KEY (`TickerSymbol`) REFERENCES `politics`.`contract_marketName` (`TickerSymbol`) ON UPDATE CASCADE,
+    CONSTRAINT `price_ibfk_3` FOREIGN KEY (`report_id`) REFERENCES `politics`.`report_marketName` (`report_id`) ON UPDATE CASCADE
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `buyYes_marketName` (
+    `ID` int(11) NOT NULL AUTO_INCREMENT,
+    `contract_id` int(11) NOT NULL,
+    `buyYesPrice` decimal(5,3) NOT NULL,
+    `quantity` int(11) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `buyYes_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `politics`.`contract_marketName` (`ID`) ON UPDATE CASCADE
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `sellYes_marketName` (
+    `ID` int(11) NOT NULL AUTO_INCREMENT,
+    `contract_id` int(11) NOT NULL,
+    `sellYesPrice` decimal(5,3) NOT NULL,
+    `quantity` int(11) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `sellYes_ibfk_1` FOREIGN KEY (`contract_id`) REFERENCES `politics`.`contract_marketName` (`ID`) ON UPDATE CASCADE
+)
+AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE `tradeLink_marketName` (
+    `source` int(11) NOT NULL,
+    `sink` int(11) NOT NULL
+)
+
+
+CREATE TABLE `switch_marketName` (
+    `ID` int(11) NOT NULL AUTO_INCREMENT,
+    `switchMessage` varchar(255) NOT NULL,
+    `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ID`)
+)
+AUTO_INCREMENT=1 ;
+
+
+
+# To enable logging on all queries in a new mysql table or a log file
+
+Execute SET GLOBAL log_output = 'TABLE';
+Execute SET GLOBAL general_log = 'ON';
+Look at the table mysql.general_log and all executed queries will be stored there
+
+# If you prefer to output to a file:
+
+SET GLOBAL log_output = "FILE"; which is set by default.
+SET GLOBAL general_log_file = "/path/to/your/logfile.log";
+SET GLOBAL general_log = 'ON';
+
