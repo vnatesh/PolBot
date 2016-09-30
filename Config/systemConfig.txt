@@ -1,0 +1,215 @@
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+
+
+############### Setting up the ability to send emails from the terminal using the Postfix mail transfer agent (MTA)
+
+# First, we need to change the config file so it encrypts data transmission (SSL) 
+sudo nano /etc/postfix/main.cf
+
+# Add in the following lines:
+
+mydomain_fallback = localhost
+mail_owner = _postfix
+setgid_group = _postdrop
+
+#Gmail SMTP protocol (port 587)
+relayhost=smtp.gmail.com:587
+
+# Enable SASL authentication in the Postfix SMTP client.
+smtp_sasl_auth_enable=yes
+smtp_sasl_password_maps=hash:/etc/postfix/sasl_passwd
+smtp_sasl_security_options=noanonymous
+smtp_sasl_mechanism_filter=plain
+
+# Enable Transport Layer Security (TLS), i.e. SSL.
+smtp_use_tls=yes
+smtp_tls_security_level=encrypt
+tls_random_source=dev:/dev/urandom
+
+# Create a new file to store your gmail password...remember this file
+sudo nano /etc/postfix/sasl_passwd
+smtp.gmail.com:587 email@email.com:password
+
+# This line creates a postfix lookup table
+sudo postmap /etc/postfix/sasl_passwd
+
+sudo postfix start
+sudo postfix reload
+
+Step 4. Turn on less secure apps (Only Gmail)
+In Gmail we must switch on the option “Access for less secure apps“, otherwise we will get the error: 
+SASL authentication failed
+
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+
+
+############### Setting up the ability to receive emails from gmail in the terminal using the getmail mail retriever agent (MRA)
+
+# install getmail and create a getmail directory containing a getmailrc file and PolBot.log file
+
+brew install getmail
+mkdir ~/.getmail
+chmod 700 ~/.getmail
+touch ~/.getmail/getmailrc
+touch ~/.getmail/PolBot.log
+
+# create a directory structure in Polbot in a format identifiable by the getmail client
+
+mkdir -p ~/Polbot/mail/cur/
+mkdir -p ~/Polbot/mail/new/
+mkdir -p ~/Polbot/mail/tmp/
+
+# add this in the getmailrc file
+
+```
+[retriever]
+type = SimplePOP3SSLRetriever
+server = pop.gmail.com
+port = 995
+username = email@email.com
+password = password
+
+[destination]
+type = Maildir
+path = ~/PolBot/mail/
+
+
+[options]
+# print messages about each action (verbose = 2)
+# Other options:
+# 0 prints only warnings and errors
+# 1 prints messages about retrieving and deleting messages only
+verbose = 2
+message_log = ~/.getmail/PolBot.log
+# preserves your mail after backup
+delete = false
+# just get new mails
+read_all = false
+# do not alter messages
+delivered_to = false
+received = false
+
+```
+
+# run the getmail application
+
+getmail
+getmail -n (new messages)
+
+# Message content and metadata will be returned to ~/PolBot/mail/new 
+
+
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+
+############### Alternative way of setting up an MRA via the Fetchmail client....its a bit buggy and outdated though
+
+# update installs and get fetchmail
+brew update
+brew install fetchmail
+
+# create an ssl X.509 certificate and RSA key using openSSL
+mkdir .ssl; cd .ssl; mkdir certs; cd certs
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days XXX
+
+# obtain root certificates from mac keychain (it isn't stored on the filesystem) and export all the keychains to a .pem file
+# The root cert should now be ~/RootCertificates.pem
+
+# test the ssl connection...(port 443 for hhtps)
+openssl s_client -CAfile RootCertificates.pem -connect www.google.com:443
+
+# now test the POP3 protocol for gmail over port 995
+openssl s_client -CAfile RootCertificates.pem -connect pop.gmail.com:995 -showcerts
+
+# in the above two tests, you should not be getting any certificate errors for example:
+     verify error:num=20:unable to get local issuer certificate
+# any break in the certificate chain will prevent gmail from relaying mail to the /var/mail/username folder 
+
+
+openssl req -new -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr
+
+openssl req -new -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr
+openssl x509 -req -days 365 -in localhost.csr -signkey localhost.key -out localhost.crt
+
+# get rootCerts from keychain...then do this
+openssl s_client -CAfile ~/RootCerts.pem -connect www.microsoft.com:443
+
+
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+
+############### Setting up passwordless mysql login from terminal
+# This allows us to run mysql commands from terminal (or any bash shell subProcess in python) 
+without requiring entery of username and password in stdin
+
+# if it doesn't already exist, create the ~/.my.cnf file
+cd
+nano .my.cnf
+
+# Add in this text
+
+[mysql]
+user=root
+password=password
+
+# Here's an example
+
+cd /usr/local/mysql/bin
+./mysql -e 'select * from politics.candidates;'
+
++----+------------------+
+| id | name             |
++----+------------------+
+|  1 | Hillary Clinton  |
+|  2 | Donald Trump     |
+|  3 | Ted Cruz         |
+|  4 | Bernie Sanders   |
+|  5 | John Kasich      |
+|  6 | Paul Ryan        |
+|  7 | Joe Biden        |
+|  8 | Mitt Romney      |
+|  9 | Marco Rubio      |
+| 10 | Scott Walker     |
+| 11 | Elizabeth Warren |
++----+------------------+
+
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+
+############### Setting up CRON on mac os
+
+# enter into the crontab file so we can edit it
+EDITOR=/usr/bin/nano sudo crontab -u username -e
+
+
+# change the PATH environment variable...this will allow downloaded python modules like requests
+# and pymysql.cursors to be imported to the workspace...the canopy python version has some extra modules
+
+PATH=/Users/username/Library/Enthought/Canopy_64bit/User/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Disable mailing of stdout/stderr output...without specifiying this, mail is sent to /var/mail/username text file by default
+
+MAILTO=""
+
+
+# polbot automated processes
+
+56 * * * * ~/PolBot/MarketData/bettingMarketsScraper.sh
+0 */6 * * * ~/PolBot/MarketData/bettingMarketsEmailer.sh
+*/1 * * * * ~/PolBot/Strategy/rcpStrategy.sh
+*/1 * * * * ~/PolBot/MarketData/marketData.sh
+*/30 * * * * python ~/PolBot/MarketData/tableRecenyChecker.py marketName
+*/3 * * * * python ~/PolBot/Trading/switch.py
+#*/1 * * * * ~/test/test.sh
+
+
+
+#--------------------------------#--------------------------------#--------------------------------#--------------------------------
+############### sending text messages from the terminal to different cell carriers
+
+U.S. Carrier    SMS Gateway MMS Gateway
+Altel   @sms.alltelwireless.com @mms.alltelwireless.com
+AT&T    @txt.att.net    @mms.att.net
+Boost Mobile    @sms.myboostmobile.com  @myboostmobile.com
+Sprint  @messaging.sprintpcs.com    @pm.sprint.com
+T-Mobile    @tmomail.net    @tmomail.net
+U.S. Cellular   @email.uscc.net @mms.uscc.net
+Verizon @vtext.com  @vzwpix.com
+Virgin Mobile   @vmobl.com  @vmpix.com
