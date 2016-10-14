@@ -2,9 +2,9 @@
  
 * Market Data Aggregator – This component acquires raw data from polls as well as pricing and volume tick data from specific political futures exchanges. It then parses the data and loads it into a MySQL database. Market data is scraped every minute via the CRON scheduler.
 	 
-* Trading API – This allows the user to programmatically interface with the exchange. It is composed of a terminal utility and python wrapper for that utility with extra functionality. The API can be called from any script, allowing the user to create algorithmic strategies based on signals
+* Trading API – This allows the user to programmatically interface with the exchange. It is composed of a terminal utility and python wrapper for that utility with extra functionality. The API can be called from any script, allowing the user to create algorithmic strategies based on signals from data collected by the market data aggregator.
 	 
-* Strategy Space – Users can dump scripts containing event-driven and/or statistical strategies into the strategy space where they will be executed according to whatever schedule is specified by the strategy
+* Strategy Space – Users can dump scripts containing event-driven and/or statistical strategies into the strategy space where they will be executed according to whatever schedule is specified by the strategy. A strategy I used is included in this directory for reference on how to set up scripts to interface with the API.
  
  
  
@@ -22,6 +22,6 @@
 
 
 
-**Coming soon**
+**Future Directions**
  
 * A shiny application (web-app framework for R) that integrates real-time data tracking and allows users to interactively view their positions, P&L, and other financial metrics. It will also serve as a GUI for backtesting strategies.
