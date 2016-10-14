@@ -4,7 +4,7 @@
 	 
 * Trading API – This allows the user to programmatically interface with the exchange. It is composed of a terminal utility and python wrapper for that utility with extra functionality. The API can be called from any script, allowing the user to create algorithmic strategies based on signals from data collected by the market data aggregator.
 	 
-* Strategy Space – Users can dump scripts containing event-driven and/or statistical strategies into the strategy space where they will be executed according to whatever schedule is specified by the strategy. A strategy I used is included in this directory for reference on how to set up scripts to interface with the API.
+* Strategy Space – Users can dump scripts containing event-driven and/or statistical strategies into the strategy space where they will be executed according to whatever schedule is specified by the strategy. A couple strategies I used are included in this directory for reference on how to set up scripts to interface with the API.
  
  
  
