@@ -7,21 +7,34 @@ mydb = dbConnect(MySQL(), user='root',
                  dbname='politics', 
                  host='localhost')
 
-
 rawData = suppressWarnings(data.table(dbGetQuery(mydb, "select p.report_id, p.BestBuyYesCost,
 p.BestSellYesCost, BestBuyNoCost, BestSellNoCost, p.Volume, c.TickerSymbol security, r.timestamp
 from price_ObamaAppr p
 inner join contract_ObamaAppr c on p.contract_id = c.ID
 inner join report_ObamaAppr r on p.report_id = r.report_id")))
 
+# rawData = suppressWarnings(data.table(dbGetQuery(mydb, "select p.report_id, p.BestBuyYesCost, 
+# p.BestSellYesCost, BestBuyNoCost, BestSellNoCost, p.Volume, c.TickerSymbol security, r.timestamp 
+# from price_ObamaAppr p 
+# inner join contract_ObamaAppr c on p.contract_id = c.ID 
+# inner join report_ObamaAppr r on p.report_id = r.report_id
+# WHERE DAYNAME(r.timestamp) NOT IN ('Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday')
+# AND HOUR(r.timestamp) >= 5")))
 
 data <- rawData[!is.na(Volume)]
+# data$volumeDelta <- c(0, diff(data$Volume))
+# data <- rawData
 data$day <- as.Date(data$timestamp)
 data$week <- strftime(data$day,format="%W")
 data$contractWeek <- ifelse(weekdays(data$day) %in% c('Saturday', 'Sunday'), as.integer(data$week) + 1, as.integer(data$week))
 
 priceData <- data[contractWeek == max(contractWeek)]
+# priceData <- data
 priceData = acast(priceData, report_id ~ security, value.var="BestBuyYesCost")
+
+jpeg(filename=paste0(getwd(),"/Documents/realTimeTracking.jpeg"), 
+     width = 1200, height = 1000, res = 100 )
+
 
 par(mfcol=2:1,xpd=TRUE, font.lab = 4)
 matplot(priceData, type = c("b"),pch=1,col = 1:ncol(priceData), bty='L'
@@ -30,6 +43,7 @@ title("Real-time Predictit Data Tracking")
 axis(side = 2, tick = 0.01, at = seq(0,1,0.05), cex.axis = 0.9)
 legend('topleft',legend = colnames(priceData), lty=c("solid","dashed"), col = 1:7, bty="n", cex=0.6)
 
+# volumeData <- data
 volumeData <- data[contractWeek == max(contractWeek)]
 
 volumeData <- do.call(rbind, lapply(unique(volumeData$security), function(sec) {
@@ -42,6 +56,8 @@ volumeData <- volumeData[volumeDelta>=0]
 volumeData = acast(volumeData, report_id ~ security, value.var="volumeDelta")
 matplot(volumeData, type = c("b"), pch=1,col = 1:ncol(volumeData), bty='L', xlab="time (approx 1 minute increment)",  ylab="∆ Volume" )
 legend('topleft',legend = colnames(volumeData), lty=c("solid","dashed"), col = 1:7, bty="n", cex=0.6)
+
+dev.off()
 
 cons = dbListConnections(MySQL())
 for(con in cons){dbDisconnect(con)}
