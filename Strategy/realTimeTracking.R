@@ -20,7 +20,7 @@ data$day <- as.Date(data$timestamp)
 data$week <- strftime(data$day,format="%W")
 data$contractWeek <- ifelse(weekdays(data$day) %in% c('Saturday', 'Sunday'), as.integer(data$week) + 1, as.integer(data$week))
 
-priceData <- data[contractWeek == max(contractWeek) -6]
+priceData <- data[contractWeek == max(contractWeek)]
 priceData = acast(priceData, report_id ~ security, value.var="BestBuyYesCost")
 
 par(mfcol=2:1,xpd=TRUE, font.lab = 4)
@@ -30,7 +30,7 @@ title("Real-time Predictit Data Tracking")
 axis(side = 2, tick = 0.01, at = seq(0,1,0.05), cex.axis = 0.9)
 legend('topleft',legend = colnames(priceData), lty=c("solid","dashed"), col = 1:7, bty="n", cex=0.6)
 
-volumeData <- data[contractWeek == max(contractWeek) - 6]
+volumeData <- data[contractWeek == max(contractWeek)]
 
 volumeData <- do.call(rbind, lapply(unique(volumeData$security), function(sec) {
   partition = volumeData[security == sec]
