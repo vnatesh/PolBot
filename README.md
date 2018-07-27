@@ -1,4 +1,4 @@
-**PolBot is an automated trading engine designed for political futures markets. Mirroring the structure of algorithmic trading systems in finance, PolBot is made up of distinct components:**
+**PolBot is an automated trading engine designed for political futures markets such as Predictit. Mirroring the structure of algorithmic trading systems in finance, PolBot is made up of distinct components:**
  
 * Market Data Aggregator – This component acquires raw data from polls as well as pricing and volume tick data from specific political futures exchanges. It then parses the data and loads it into a MySQL database. Market data is scraped every minute via the CRON scheduler.
 	 
