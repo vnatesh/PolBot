@@ -26,5 +26,5 @@
  
 * A shiny application (web-app framework for R) that integrates real-time data tracking and allows users to interactively view their positions, P&L, and other financial metrics. It will also serve as a GUI for backtesting strategies.
 
+![alt text](https://upload.wikimedia.org/wikipedia/commons/c/c4/Emergence_of_protocols_in_algorithmic_trading_system.png)
 
-https://upload.wikimedia.org/wikipedia/commons/c/c4/Emergence_of_protocols_in_algorithmic_trading_system.png
